@@ -7,7 +7,9 @@ const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");  // help to create template
 const warpAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./ExpressError");
-const {listingSchema} = require("./schema.js");
+const {listingSchema, reviewSchema} = require("./schema.js");
+const Review = require("./models/review.js");
+const wrapAsync = require("./utils/wrapAsync.js");
 
 // mongoose connection
 
@@ -34,7 +36,7 @@ app.get("/", (req, res) => {
 
 // validation middleware
 const validateListing = (req, res, next) => {
-    let {error} = listingSchema.validate(req.body);  
+    let {error} = listingSchema.validate(req.body);   // validate this if error throw this below
     if(error){
         let errMsg = error.details.map((el) => el.message).join(","); // the err come in obj so we can exptra that using errordtatils and map with each el with the messg and send with join by sperated by ,
         throw new ExpressError(400, errMsg);
@@ -42,6 +44,18 @@ const validateListing = (req, res, next) => {
         next();
     }
 }
+
+// validation for review
+const validateReview = (req, res, next) => {
+    let {error} = reviewSchema.validate(req.body);  
+    if(error){
+        let errMsg = error.details.map((el) => el.message).join(","); // the err come in obj so we can exptra that using errordtatils and map with each el with the messg and send with join by sperated by ,
+        throw new ExpressError(400, errMsg);
+    }else{
+        next();
+    }
+}
+
 // index route (show all listings)
 app.get("/listings", async (req, res) => {
     // Listing.find({}).then(res => {
@@ -136,6 +150,25 @@ app.delete("/listings/:id", warpAsync(async (req, res) => {
     console.log(deleteListing);
     res.redirect("/listings");
 }));
+
+
+//Review
+//post routes
+app.post("/listings/:id/reviews", validateReview, wrapAsync(async(req, res) => {
+    let listing = await Listing.findById(req.params.id);
+    let newReview = new Review(req.body.review);
+
+    listing.reviews.push(newReview);  // reviews is the array where i am pushing my data
+
+    await newReview.save();
+    await listing.save();
+
+    // console.log("new review saved");
+    // res.send("new review saved");
+
+    res.redirect(`/listings/${listing._id}`);
+}));
+
 
 // app.get("/testListing", async (req, res) => {
 //     let sampleListing = new Listing ({
