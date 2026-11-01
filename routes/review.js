@@ -31,7 +31,7 @@ router.post("/", validateReview, wrapAsync(async(req, res) => {
 
     // console.log("new review saved");
     // res.send("new review saved");
-
+    req.flash("success", "New Review Created");
     res.redirect(`/listings/${listing._id}`);
 }));
 
@@ -42,7 +42,7 @@ router.delete("/:reviewId", wrapAsync(async (req, res) => {
     await Listing.findByIdAndUpdate(id, {review: reviewId}) // the revmoed review must also removed by the reviews of the listing so we use this 
     // means in id reviewid mathching review from the id get deleted
     await Review.findByIdAndDelete(reviewId); // this is the remvoing the reviews from the reviews by the id 
-
+    req.flash("success", "Review Deleted!");
     res.redirect(`/listings/${id}`);
 }));
 

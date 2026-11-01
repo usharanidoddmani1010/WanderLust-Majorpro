@@ -1,3 +1,8 @@
+
+// if (process.env.NODE_ENV != "production") {
+//     require('dotenv').config();
+// }
+// require("dotenv").config();
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
@@ -6,12 +11,20 @@ const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");  // help to create template
 const ExpressError = require("./ExpressError");
+const ReviewsRouter = require("./routes/review.js");
+const listingsRouter = require("./routes/listing.js");
+const session = require("express-session");
+const flash = require("connect-flash");
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+const User = require("./models/user.js");
+const userRouter = require("./routes/user.js");
 
-const Reviews = require("./routes/review.js");
-const listings = require("./routes/listing.js");
+
 // mongoose connection
-
 const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
+//  const dbUrl = process.env.ATLASDB_URL;
+
 main().then(() => {
     console.log("connected to DB");
 })
@@ -19,6 +32,7 @@ main().then(() => {
 
 async function main() {
   await mongoose.connect(MONGO_URL);
+//   await mongoose.connect(dbUrl);
 };
 
 app.set("view engine", "ejs");
@@ -28,9 +42,47 @@ app.use(methodOverride("_method"));
 app.engine('ejs', ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
 
+const sessionOptions = {
+    secret: "mysupersecretstring",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7days in the mili sec
+        maxAge: 7*24*60*60*1000,
+        httpOnly : true
+    }
+};
+
 app.get("/", (req, res) => {
     res.send("Hi, I am root");
-});
+}); 
+
+app.use(session (sessionOptions));
+app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+
+passport.serializeUser(User.serializeUser()); //store the infor of the user
+passport.deserializeUser(User.deserializeUser()); //destore the info of the user
+
+
+
+app.use((req, res, next) =>{
+    res.locals.success = req.flash("success"); // this stores the temp for the useage in the future
+    console.log(res.locals.success);
+    res.locals.error = req.flash("error");
+    next();
+})
+
+// app.get("/demouser", async (req, res) => {
+//     let fakeUser = new User({
+//         email: "student@gmail.com",
+//         username: "delta-student"
+//     });
+//     let registeredUser = await User.register(fakeUser, "helloworld");
+//     res.send(registeredUser);
+// });
 
 // // validation middleware
 // const validateListing = (req, res, next) => {
@@ -55,9 +107,9 @@ app.get("/", (req, res) => {
 // }
 
 // use the listing 
-app.use("/listings", listings);
-app.use("/listings/:id/reviews", Reviews);
-
+app.use("/listings", listingsRouter);
+app.use("/listings/:id/reviews", ReviewsRouter);
+app.use("/", userRouter);
 // // index route (show all listings)
 // app.get("/listings", async (req, res) => {
 //     // Listing.find({}).then(res => {

@@ -36,6 +36,10 @@ router.get("/new", (req, res) => {
 router.get("/:id", wrapAsync(async (req, res) => {
     let {id} = req.params;
     const listing = await Listing.findById(id).populate("reviews");
+    if(!listing) {
+        req.flash("error", "Listing you reqested for does not exists!");
+        return res.redirect("/listings");   
+    }
     res.render("listings/show.ejs", {listing});
 }));
 
@@ -77,6 +81,7 @@ router.post("/", validateListing,wrapAsync(async (req, res) => {
         // } // it throw the error for all individul and whole listing
         const newListing = new Listing(req.body.listing);
         await newListing.save();
+        req.flash("success", "New Listing Created!");
         res.redirect("/listings"); // thorw hoppscotch when i try to run this api without posting any obj with it (client error will occur)
     // }catch(err) { 
     //     next(err);
@@ -90,6 +95,10 @@ router.post("/", validateListing,wrapAsync(async (req, res) => {
 router.get("/:id/edit",wrapAsync(async (req, res) => {
     let {id} = req.params;
     const listing = await Listing.findById(id);
+    if(!listing) {
+        req.flash("error", "Listing you reqested for does not exists!");
+        return res.redirect("/listings");   
+    }
     res.render("listings/edit.ejs", {listing});
 }));
 
@@ -101,6 +110,7 @@ router.put("/:id/", validateListing,wrapAsync(async (req, res) => {
     // }
     let {id} = req.params;
     await Listing.findByIdAndUpdate(id, {...req.body.listing});
+    req.flash("success", "Listing Updated!");
     res.redirect(`/listings/${id}`);
 }));
 
@@ -109,6 +119,7 @@ router.delete("/:id", wrapAsync(async (req, res) => {
     let { id } = req.params;
     let deleteListing = await Listing.findByIdAndDelete(id);
     console.log(deleteListing);
+    req.flash("success", "Listing Deleted!");
     res.redirect("/listings");
 }));
 

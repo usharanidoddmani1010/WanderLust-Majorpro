@@ -1,4 +1,4 @@
-const Joi = require('joi');  //joi.dev --- install throw npm   (joi is a tool for schema validation)
+const Joi = require('joi');  //joi.dev --- install through npm   (joi is a tool for schema validation)
 
 module.exports.listingSchema = Joi.object({
     listing : Joi.object({ //listing is the obj name in joi and Joi.object() this says that when a request come it should contain the listing obj
